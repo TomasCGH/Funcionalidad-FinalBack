@@ -21,51 +21,77 @@ public class EncargadoController {
         this.encargadoFacade = new EncargadoFacadeImpl();
     }
 
+    /**
+     * Punto de prueba: devuelve un DTO vacío de Encargado.
+     */
     @GetMapping("/dummy")
     public EncargadoDTO getDummy() {
         return new EncargadoDTO();
     }
 
-    @GetMapping("/{orgId}/{encargadoId}")
-    public ResponseEntity<EncargadoDTO> consultarPorId(
-            @PathVariable("orgId") UUID orgId,
-            @PathVariable("encargadoId") UUID encargadoId) throws BackEndException {
-        var encargado = encargadoFacade.consultarEncargadoPorId(orgId, encargadoId);
-        return new ResponseEntity<>(encargado, HttpStatus.OK);
+    /**
+     * Consulta un encargado por su ID.
+     * @param id UUID del encargado
+     * @return ResponseEntity con el EncargadoDTO y estado 200 OK
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<EncargadoDTO> consultarPorId(@PathVariable("id") UUID id) throws BackEndException {
+        EncargadoDTO dto = encargadoFacade.consultarEncargadoPorId(id);
+        return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
-    @GetMapping("/{orgId}")
-    public ResponseEntity<List<EncargadoDTO>> consultarTodosPorOrganizacion(
-            @PathVariable("orgId") UUID orgId) throws BackEndException {
-        var lista = encargadoFacade.consultarEncargadosPorOrganizacion(orgId, getDummy());
+    /**
+     * Lista todos los encargados que cumplan el filtro (aquí se envía un DTO vacío para obtener todos).
+     * @return ResponseEntity con la lista de EncargadoDTO y estado 200 OK
+     */
+    @GetMapping
+    public ResponseEntity<List<EncargadoDTO>> consultarTodos() throws BackEndException {
+        List<EncargadoDTO> lista = encargadoFacade.consultarEncargados(getDummy());
         return new ResponseEntity<>(lista, HttpStatus.OK);
     }
 
-    @PostMapping("/{orgId}")
-    public ResponseEntity<String> crear(
-            @PathVariable("orgId") UUID orgId,
-            @RequestBody EncargadoDTO encargado) throws BackEndException {
-        encargadoFacade.registrarNuevoEncargado(orgId, encargado);
-        var mensaje = "El nuevo encargado ha sido registrado exitosamente en la organización con ID " + orgId;
-        return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
+    /**
+     * Crea un nuevo encargado a partir del JSON en el cuerpo de la petición.
+     * @param encargadoDTO datos del nuevo encargado
+     * @return ResponseEntity con mensaje de éxito y estado 200 OK
+     */
+    @PostMapping
+    public ResponseEntity<String> crear(@RequestBody EncargadoDTO encargadoDTO) throws BackEndException {
+        encargadoFacade.registrarNuevoEncargado(encargadoDTO);
+        String mensajeExito = "El nuevo encargado '" + encargadoDTO.getNombre() +
+                "' se ha registrado exitosamente";
+        return new ResponseEntity<>(mensajeExito, HttpStatus.OK);
     }
 
-    @PutMapping("/{orgId}/{encargadoId}")
-    public ResponseEntity<String> modificar(
-            @PathVariable("orgId") UUID orgId,
-            @PathVariable("encargadoId") UUID encargadoId,
-            @RequestBody EncargadoDTO encargado) throws BackEndException {
-        encargadoFacade.modificarEncargadoExistente(orgId, encargadoId, encargado);
-        var mensaje = "El encargado con ID " + encargadoId + " se ha modificado exitosamente.";
-        return new ResponseEntity<>(mensaje, HttpStatus.OK);
+    /**
+     * Modifica un encargado existente. El ID va en la URL y el resto de campos en el JSON.
+     * @param id UUID del encargado a modificar
+     * @param encargadoDTO campos actualizados
+     * @return ResponseEntity con mensaje de éxito y estado 200 OK
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<String> modificar(@PathVariable("id") UUID id,
+                                            @RequestBody EncargadoDTO encargadoDTO) throws BackEndException {
+        // Asegurarse de propagar el ID al DTO antes de invocar la capa de negocio
+        encargadoDTO.setId(id);
+        encargadoFacade.modificarEncargadoExistente(id, encargadoDTO);
+        String mensajeExito = "El encargado '" + encargadoDTO.getNombre() +
+                "' se ha modificado exitosamente";
+        return new ResponseEntity<>(mensajeExito, HttpStatus.OK);
     }
 
-    @DeleteMapping("/{orgId}/{encargadoId}")
-    public ResponseEntity<String> eliminar(
-            @PathVariable("orgId") UUID orgId,
-            @PathVariable("encargadoId") UUID encargadoId) throws BackEndException {
-        encargadoFacade.darBajaDefinitivamenteEncargadoExistente(orgId, encargadoId);
-        var mensaje = "El encargado con ID " + encargadoId + " ha sido eliminado correctamente.";
-        return new ResponseEntity<>(mensaje, HttpStatus.OK);
+    /**
+     * Elimina definitivamente un encargado según el ID en la URL.
+     * @param id UUID del encargado a eliminar
+     * @return ResponseEntity con mensaje de éxito y estado 200 OK
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> eliminar(@PathVariable("id") UUID id) throws BackEndException {
+        // Para devolver el nombre en el mensaje de éxito, primero lo consultamos
+        EncargadoDTO dtoExistente = encargadoFacade.consultarEncargadoPorId(id);
+        encargadoFacade.darBajaDefinitivamenteEncargadoExistente(id);
+        String mensajeExito = "El encargado '" + dtoExistente.getNombre() +
+                "' se ha eliminado exitosamente";
+        return new ResponseEntity<>(mensajeExito, HttpStatus.OK);
     }
 }

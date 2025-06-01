@@ -77,7 +77,7 @@ public abstract class UsuarioDomain {
 
 
     // Setters protegidos para uso desde subclases
-    protected void setId(final UUID id) {
+    public void setId(final UUID id) {
         this.id = UtilUUID.obtenerValorDefecto(id);
     }
 

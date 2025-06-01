@@ -1,32 +1,29 @@
 package co.edu.uco.backend.dto;
 
 import co.edu.uco.backend.crosscutting.utilitarios.UtilObjeto;
-import co.edu.uco.backend.crosscutting.utilitarios.UtilTexto;
 import co.edu.uco.backend.crosscutting.utilitarios.UtilUUID;
 
 import java.util.UUID;
 
+/**
+ * DTO para Encargado, extiende UsuarioDTO y agrega:
+ * - tipoDocumento  (CD o CE)
+ * - numeroDocumento
+ * - correo         (autogenerado)
+ * - organizacionId (UUID de la organización deportiva)
+ */
 public final class EncargadoDTO extends UsuarioDTO {
-
-    private String correo;
     private String tipoDocumento;
-    private String documento;
-    private OrganizacionDeportivaDTO organizacion;
+    private String numeroDocumento;
+    private String correo;
+    private UUID organizacionId;
 
     public EncargadoDTO() {
         super();
-        setCorreo(UtilTexto.getInstance().obtenerValorDefecto());
-        setTipoDocumento(UtilTexto.getInstance().obtenerValorDefecto());
-        setDocumento(UtilTexto.getInstance().obtenerValorDefecto());
-        setOrganizacion(OrganizacionDeportivaDTO.obtenerValorDefecto());
     }
 
     public EncargadoDTO(final UUID id) {
         super(id);
-        setCorreo(UtilTexto.getInstance().obtenerValorDefecto());
-        setTipoDocumento(UtilTexto.getInstance().obtenerValorDefecto());
-        setDocumento(UtilTexto.getInstance().obtenerValorDefecto());
-        setOrganizacion(OrganizacionDeportivaDTO.obtenerValorDefecto());
     }
 
     public EncargadoDTO(
@@ -36,59 +33,60 @@ public final class EncargadoDTO extends UsuarioDTO {
             final String contrasena,
             final String prefijoTelefono,
             final String telefono,
-            final String correo,
             final String tipoDocumento,
-            final String documento,
-            final OrganizacionDeportivaDTO organizacion
+            final String numeroDocumento,
+            final String correo,
+            final UUID organizacionId
     ) {
         super(id, nombre, username, contrasena, prefijoTelefono, telefono);
-        setCorreo(correo);
         setTipoDocumento(tipoDocumento);
-        setDocumento(documento);
-        setOrganizacion(organizacion);
+        setNumeroDocumento(numeroDocumento);
+        setCorreo(correo);
+        setOrganizacionId(organizacionId);
     }
 
     public static EncargadoDTO obtenerValorDefecto() {
         return new EncargadoDTO();
     }
 
-    public static EncargadoDTO obtenerValorDefecto(final EncargadoDTO dto) {
-        return UtilObjeto.getInstance().obtenerValorDefecto(dto, obtenerValorDefecto());
-    }
-
-    public String getCorreo() {
-        return correo;
-    }
-
-    public EncargadoDTO setCorreo(final String correo) {
-        this.correo = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(correo);
-        return this;
+    public static EncargadoDTO obtenerValorDefecto(final EncargadoDTO encargado) {
+        return UtilObjeto.getInstance().obtenerValorDefecto(encargado, obtenerValorDefecto());
     }
 
     public String getTipoDocumento() {
         return tipoDocumento;
     }
 
-    public EncargadoDTO setTipoDocumento(final String tipoDocumento) {
-        this.tipoDocumento = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(tipoDocumento);
-        return this;
+    public void setTipoDocumento(String tipoDocumento) {
+        this.tipoDocumento = UtilObjeto.getInstance().validarCadena(tipoDocumento);
     }
 
-    public String getDocumento() {
-        return documento;
+    public String getNumeroDocumento() {
+        return numeroDocumento;
     }
 
-    public EncargadoDTO setDocumento(final String documento) {
-        this.documento = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(documento);
-        return this;
+    public void setNumeroDocumento(String numeroDocumento) {
+        this.numeroDocumento = UtilObjeto.getInstance().validarCadena(numeroDocumento);
     }
 
-    public OrganizacionDeportivaDTO getOrganizacion() {
-        return organizacion;
+    public String getCorreo() {
+        return correo;
     }
 
-    public EncargadoDTO setOrganizacion(final OrganizacionDeportivaDTO organizacion) {
-        this.organizacion = OrganizacionDeportivaDTO.obtenerValorDefecto(organizacion);
-        return this;
+    public void setCorreo(String correo) {
+        this.correo = UtilObjeto.getInstance().validarCadena(correo);
+    }
+
+    public UUID getOrganizacionId() {
+        return organizacionId;
+    }
+
+    public void setOrganizacionId(UUID organizacionId) {
+        // Usamos directamente los métodos estáticos de UtilUUID
+        if (organizacionId == null || UtilUUID.esValorDefecto(organizacionId)) {
+            this.organizacionId = UtilUUID.obtenerValorDefecto();
+        } else {
+            this.organizacionId = organizacionId;
+        }
     }
 }

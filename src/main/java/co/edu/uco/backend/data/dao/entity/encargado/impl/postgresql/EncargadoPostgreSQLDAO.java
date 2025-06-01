@@ -2,16 +2,27 @@ package co.edu.uco.backend.data.dao.entity.encargado.impl.postgresql;
 
 import co.edu.uco.backend.crosscutting.exceptions.BackEndException;
 import co.edu.uco.backend.crosscutting.exceptions.DataBackEndException;
+import co.edu.uco.backend.crosscutting.utilitarios.UtilEncrypt;
+import co.edu.uco.backend.crosscutting.utilitarios.UtilTexto;
+import co.edu.uco.backend.crosscutting.utilitarios.UtilUUID;
 import co.edu.uco.backend.data.dao.entity.encargado.EncargadoDAO;
 import co.edu.uco.backend.entity.EncargadoEntity;
-import co.edu.uco.backend.entity.OrganizacionDeportivaEntity;
-import co.edu.uco.backend.entity.UsuarioEntity;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Implementación PostgreSQL de EncargadoDAO.
+ * Sigue la misma estructura que ClientePostgreSQLDAO, pero adaptada
+ * a la entidad Encargado con campos adicionales:
+ *  - tipoDocumento
+ *  - numeroDocumento
+ *  - correo
+ *  - organizacionId
+ */
 public class EncargadoPostgreSQLDAO implements EncargadoDAO {
 
     private final Connection connection;
@@ -23,99 +34,305 @@ public class EncargadoPostgreSQLDAO implements EncargadoDAO {
     @Override
     public void crear(EncargadoEntity entity) throws BackEndException {
         var sentenciaSQL = new StringBuilder();
-        sentenciaSQL.append("INSERT INTO encargado(encargadoId, nombre, usuario, contrasena, prefijo, telefono, correo, tipodocumento, documento, codigoorganizacion)" +
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        try (var sentenciaPreparada = connection.prepareStatement(sentenciaSQL.toString())){
-            sentenciaPreparada.setObject(1,entity.getId());
-            sentenciaPreparada.setString(2,entity.getNombre());
-            sentenciaPreparada.setString(3,entity.getUsername());
-            sentenciaPreparada.setString(4,entity.getContrasena());
-            sentenciaPreparada.setString(5,entity.getPrefijoTelefono());
-            sentenciaPreparada.setString(6,entity.getTelefono());
-            sentenciaPreparada.setString(7,entity.getCorreo());
-            sentenciaPreparada.setString(8,entity.getTipoDocumento());
-            sentenciaPreparada.setString(9,entity.getDocumento());
-            sentenciaPreparada.setObject(10,entity.getOrganizacion());
+        sentenciaSQL.append(
+                "INSERT INTO doodb.encargado(" +
+                        " codigoencargado," +
+                        " nombre," +
+                        " username," +
+                        " contrasena," +
+                        " prefijotelefono," +
+                        " telefono," +
+                        " tipodocumento," +
+                        " numerodocumento," +
+                        " correo," +
+                        " organizacionid" +
+                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
 
+        try (var ps = connection.prepareStatement(sentenciaSQL.toString())) {
+            ps.setObject(1, entity.getId());
+            ps.setString(2, entity.getNombre());
+            ps.setString(3, entity.getUsername());
+            String hashed = UtilEncrypt.hash(entity.getContrasena());
+            ps.setString(4, hashed);
+            ps.setString(5, entity.getPrefijoTelefono());
+            ps.setString(6, entity.getTelefono());
+            ps.setString(7, entity.getTipoDocumento());
+            ps.setString(8, entity.getNumeroDocumento());
+            ps.setString(9, entity.getCorreo());
+            ps.setObject(10, entity.getOrganizacionId());
 
-            sentenciaPreparada.executeUpdate();
-        } catch (SQLException exception) {
-            var mensajeTecnico = "Se presentó una SQLException tratando de registrar la nueva informacion del Encargado en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema tratando de registrar la nueva informacion del Encargado en la fuente de datos";
-
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
-
-        }catch (Exception exception) {
-            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA tratando de ingresar la nueva infromacion del Encargado en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema inesperado tratando de ingresar la nueva informacion del Encargado en la base de datos    ";
-
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException tratando de registrar un nuevo Encargado en la base de datos.";
+            var mensajeUsuario = "No se pudo registrar el Encargado en el sistema.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al registrar un nuevo Encargado.";
+            var mensajeUsuario = "Ocurrió un error inesperado registrando el Encargado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
         }
     }
 
     @Override
-    public void eliminar(UUID encargadoId) throws BackEndException {
+    public void eliminar(UUID codigoencargado) throws BackEndException {
         var sentenciaSQL = new StringBuilder();
-        sentenciaSQL.append("DELETE FROM encargado WHERE encargadoid = ?)");
-        try (var sentenciaPreparada = connection.prepareStatement(sentenciaSQL.toString())){
-            sentenciaPreparada.setObject(1,encargadoId);
-
-            sentenciaPreparada.executeUpdate();
-        } catch (SQLException exception) {
-            var mensajeTecnico = "Se presentó una SQLException tratando de hacer un DELETE en la tabla del encargado en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema tratando de eliminar definitivamente informacion del encargado deseada de la fuente de datos";
-
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
-
-        }catch (Exception exception) {
-            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA tratando de hacer un DELETE en la tabla del encargado en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema INESPERADO tratando de borrar definitivamente la informacion del encargado en la base de datos    ";
-
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
+        sentenciaSQL.append("DELETE FROM doodb.encargado WHERE codigoencargado = ?");
+        try (var ps = connection.prepareStatement(sentenciaSQL.toString())) {
+            ps.setObject(1, codigoencargado);
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException tratando de eliminar un Encargado en la base de datos.";
+            var mensajeUsuario = "No se pudo eliminar el Encargado del sistema.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al eliminar un Encargado.";
+            var mensajeUsuario = "Ocurrió un error inesperado eliminando el Encargado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
         }
     }
 
     @Override
-    public List<EncargadoEntity> consultar(EncargadoEntity entity) {
-        return List.of();
+    public List<EncargadoEntity> consultar(EncargadoEntity entity) throws BackEndException {
+        var lista = new ArrayList<EncargadoEntity>();
+        var sql = new StringBuilder("""
+            SELECT codigoencargado
+                 , nombre
+                 , username
+                 , contrasena
+                 , prefijotelefono
+                 , telefono
+                 , tipodocumento
+                 , numerodocumento
+                 , correo
+                 , organizacionid
+            FROM doodb.encargado
+            WHERE 1=1
+            """);
+
+        boolean filtrarId              = !UtilUUID.esValorDefecto(entity.getId());
+        boolean filtrarNombre          = !UtilTexto.getInstance().estaVacia(entity.getNombre());
+        boolean filtrarUsername        = !UtilTexto.getInstance().estaVacia(entity.getUsername());
+        boolean filtrarPrefijoTelefono = !UtilTexto.getInstance().estaVacia(entity.getPrefijoTelefono());
+        boolean filtrarTelefono        = !UtilTexto.getInstance().estaVacia(entity.getTelefono());
+        boolean filtrarTipoDocumento   = !UtilTexto.getInstance().estaVacia(entity.getTipoDocumento());
+        boolean filtrarNumeroDocumento = !UtilTexto.getInstance().estaVacia(entity.getNumeroDocumento());
+        boolean filtrarOrganizacionId  = !UtilUUID.esValorDefecto(entity.getOrganizacionId());
+
+        if (filtrarId) {
+            sql.append(" AND codigoencargado = ?");
+        }
+        if (filtrarNombre) {
+            sql.append(" AND nombre ILIKE ?");
+        }
+        if (filtrarUsername) {
+            sql.append(" AND username = ?");
+        }
+        if (filtrarPrefijoTelefono) {
+            sql.append(" AND prefijotelefono = ?");
+        }
+        if (filtrarTelefono) {
+            sql.append(" AND telefono = ?");
+        }
+        if (filtrarTipoDocumento) {
+            sql.append(" AND tipodocumento = ?");
+        }
+        if (filtrarNumeroDocumento) {
+            sql.append(" AND numerodocumento = ?");
+        }
+        if (filtrarOrganizacionId) {
+            sql.append(" AND organizacionid = ?");
+        }
+
+        try (var ps = connection.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (filtrarId) {
+                ps.setObject(idx++, entity.getId());
+            }
+            if (filtrarNombre) {
+                ps.setString(idx++, "%" + entity.getNombre().trim() + "%");
+            }
+            if (filtrarUsername) {
+                ps.setString(idx++, entity.getUsername().trim());
+            }
+            if (filtrarPrefijoTelefono) {
+                ps.setString(idx++, entity.getPrefijoTelefono().trim());
+            }
+            if (filtrarTelefono) {
+                ps.setString(idx++, entity.getTelefono().trim());
+            }
+            if (filtrarTipoDocumento) {
+                ps.setString(idx++, entity.getTipoDocumento().trim());
+            }
+            if (filtrarNumeroDocumento) {
+                ps.setString(idx++, entity.getNumeroDocumento().trim());
+            }
+            if (filtrarOrganizacionId) {
+                ps.setObject(idx++, entity.getOrganizacionId());
+            }
+
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    var e = new EncargadoEntity();
+                    e.setId(UtilUUID.convertirAUUID(rs.getString("codigoencargado")));
+                    e.setNombre(rs.getString("nombre"));
+                    e.setUsername(rs.getString("username"));
+                    e.setContrasena(rs.getString("contrasena"));
+                    e.setPrefijoTelefono(rs.getString("prefijotelefono"));
+                    e.setTelefono(rs.getString("telefono"));
+                    e.setTipoDocumento(rs.getString("tipodocumento"));
+                    e.setNumeroDocumento(rs.getString("numerodocumento"));
+                    e.setCorreo(rs.getString("correo"));
+                    e.setOrganizacionId(UtilUUID.convertirAUUID(rs.getString("organizacionid")));
+                    lista.add(e);
+                }
+            }
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException al consultar Encargados en la base de datos.";
+            var mensajeUsuario = "No se pudo obtener la información de Encargados.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al consultar Encargados.";
+            var mensajeUsuario = "Ocurrió un error inesperado consultando Encargados.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        }
+
+        return lista;
     }
 
     @Override
-    public EncargadoEntity consultarPorId(UUID id) {
-        return null;
+    public List<EncargadoEntity> listAll() throws BackEndException {
+        var lista = new ArrayList<EncargadoEntity>();
+        var sql = new StringBuilder();
+        sql.append("""
+            SELECT codigoencargado
+                 , nombre
+                 , username
+                 , contrasena
+                 , prefijotelefono
+                 , telefono
+                 , tipodocumento
+                 , numerodocumento
+                 , correo
+                 , organizacionid
+            FROM doodb.encargado
+            """);
+
+        try (var ps = connection.prepareStatement(sql.toString());
+             var rs = ps.executeQuery()) {
+            while (rs.next()) {
+                var e = new EncargadoEntity();
+                e.setId(UtilUUID.convertirAUUID(rs.getString("codigoencargado")));
+                e.setNombre(rs.getString("nombre"));
+                e.setUsername(rs.getString("username"));
+                e.setContrasena(rs.getString("contrasena"));
+                e.setPrefijoTelefono(rs.getString("prefijotelefono"));
+                e.setTelefono(rs.getString("telefono"));
+                e.setTipoDocumento(rs.getString("tipodocumento"));
+                e.setNumeroDocumento(rs.getString("numerodocumento"));
+                e.setCorreo(rs.getString("correo"));
+                e.setOrganizacionId(UtilUUID.convertirAUUID(rs.getString("organizacionid")));
+                lista.add(e);
+            }
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException al listar todos los Encargados.";
+            var mensajeUsuario = "No se pudo obtener la lista de Encargados.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al listar Encargados.";
+            var mensajeUsuario = "Ocurrió un error inesperado al listar Encargados.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        }
+        return lista;
     }
 
+    @Override
+    public EncargadoEntity consultarPorId(UUID codigoencargado) throws BackEndException {
+        var eRetorno = new EncargadoEntity();
+        var sql = new StringBuilder();
+        sql.append("""
+            SELECT codigoencargado
+                 , nombre
+                 , username
+                 , contrasena
+                 , prefijotelefono
+                 , telefono
+                 , tipodocumento
+                 , numerodocumento
+                 , correo
+                 , organizacionid
+            FROM doodb.encargado
+            WHERE codigoencargado = ?
+            """);
 
+        try (var ps = connection.prepareStatement(sql.toString())) {
+            ps.setObject(1, codigoencargado);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    eRetorno.setId(UtilUUID.convertirAUUID(rs.getString("codigoencargado")));
+                    eRetorno.setNombre(rs.getString("nombre"));
+                    eRetorno.setUsername(rs.getString("username"));
+                    eRetorno.setContrasena(rs.getString("contrasena"));
+                    eRetorno.setPrefijoTelefono(rs.getString("prefijotelefono"));
+                    eRetorno.setTelefono(rs.getString("telefono"));
+                    eRetorno.setTipoDocumento(rs.getString("tipodocumento"));
+                    eRetorno.setNumeroDocumento(rs.getString("numerodocumento"));
+                    eRetorno.setCorreo(rs.getString("correo"));
+                    eRetorno.setOrganizacionId(UtilUUID.convertirAUUID(rs.getString("organizacionid")));
+                }
+            }
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException al consultar un Encargado por ID.";
+            var mensajeUsuario = "No se pudo obtener la información del Encargado solicitado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al consultar un Encargado por ID.";
+            var mensajeUsuario = "Ocurrió un error inesperado al consultar el Encargado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        }
+
+        return eRetorno;
+    }
 
     @Override
-    public void modificar(UUID encargadoId, EncargadoEntity entity) throws BackEndException {
+    public void modificar(UUID codigoencargado, EncargadoEntity entity) throws BackEndException {
         var sentenciaSQL = new StringBuilder();
-        sentenciaSQL.append("UPDATE encargado SET nombre = ?, usuario = ?, contrasena = ?,prefijo = ?, telefono = ?, correo = ?, tipodocumento = ?, documento = ?, codigoorganizacion = ? WHERE encargadoId = ?)");
-        try (var sentenciaPreparada = connection.prepareStatement(sentenciaSQL.toString())){
-            sentenciaPreparada.setObject(1,encargadoId);
-            sentenciaPreparada.setString(2,entity.getNombre());
-            sentenciaPreparada.setString(3,entity.getUsername());
-            sentenciaPreparada.setString(4,entity.getContrasena());
-            sentenciaPreparada.setString(5,entity.getPrefijoTelefono());
-            sentenciaPreparada.setString(6,entity.getTelefono());
-            sentenciaPreparada.setString(7,entity.getCorreo());
-            sentenciaPreparada.setString(8,entity.getTipoDocumento());
-            sentenciaPreparada.setString(9,entity.getDocumento());
-            sentenciaPreparada.setObject(10,entity.getOrganizacion());
+        sentenciaSQL.append(
+                "UPDATE doodb.encargado SET " +
+                        " nombre = ?," +
+                        " username = ?," +
+                        " contrasena = ?," +
+                        " prefijotelefono = ?," +
+                        " telefono = ?," +
+                        " tipodocumento = ?," +
+                        " numerodocumento = ?," +
+                        " correo = ?," +
+                        " organizacionid = ? " +
+                        "WHERE codigoencargado = ?"
+        );
 
-            sentenciaPreparada.executeUpdate();
-        } catch (SQLException exception) {
-            var mensajeTecnico = "Se presentó una SQLException tratando de modificar la nueva informacion del encargado deseada en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema tratando de modificar la nueva informacion del encargado deseada en la fuente de datos";
+        try (var ps = connection.prepareStatement(sentenciaSQL.toString())) {
+            ps.setString(1, entity.getNombre());
+            ps.setString(2, entity.getUsername());
+            String hashed = UtilEncrypt.hash(entity.getContrasena());
+            ps.setString(3, hashed);
+            ps.setString(4, entity.getPrefijoTelefono());
+            ps.setString(5, entity.getTelefono());
+            ps.setString(6, entity.getTipoDocumento());
+            ps.setString(7, entity.getNumeroDocumento());
+            ps.setString(8, entity.getCorreo());
+            ps.setObject(9, entity.getOrganizacionId());
+            ps.setObject(10, codigoencargado);
 
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
-
-        }catch (Exception exception) {
-            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA tratando de hacer un UPDATE del encargado deseada en la base de datos, para más detalles revise el log de errores";
-            var mensajeUsuario = "Se ha presentado un problema inesperado tratando de modificar la nueva informacion del encargado deseada en la base de datos";
-
-            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, exception);
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            var mensajeTecnico = "Se presentó una SQLException al modificar un Encargado en la base de datos.";
+            var mensajeUsuario = "No se pudo actualizar la información del Encargado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
+        } catch (Exception ex) {
+            var mensajeTecnico = "Se presentó una excepción NO CONTROLADA al modificar un Encargado.";
+            var mensajeUsuario = "Ocurrió un error inesperado actualizando el Encargado.";
+            throw DataBackEndException.reportar(mensajeUsuario, mensajeTecnico, ex);
         }
-
     }
 }

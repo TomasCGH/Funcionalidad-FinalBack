@@ -1,7 +1,6 @@
 package co.edu.uco.backend.businesslogic.assembler.encargado.entity;
 
-import co.edu.uco.backend.businesslogic.assembler.*;
-import co.edu.uco.backend.businesslogic.assembler.organizaciondeportiva.entity.OrganizacionDeportivaEntityAssembler;
+import co.edu.uco.backend.businesslogic.assembler.EntityAssembler;
 import co.edu.uco.backend.businesslogic.businesslogic.domain.EncargadoDomain;
 import co.edu.uco.backend.crosscutting.utilitarios.UtilObjeto;
 import co.edu.uco.backend.entity.EncargadoEntity;
@@ -29,48 +28,48 @@ public final class EncargadoEntityAssembler implements EntityAssembler<Encargado
                 domain.getId(),
                 domain.getNombre(),
                 domain.getUsername(),
-                domain.getTelefono(),
-                domain.getPrefijoTelefono(),
                 domain.getContrasena(),
-                domain.getCorreo(),
+                domain.getPrefijoTelefono(),
+                domain.getTelefono(),
                 domain.getTipoDocumento(),
-                domain.getDocumento(),
-                OrganizacionDeportivaEntityAssembler.getInstance().toEntity(domain.getOrganizacion())
+                domain.getNumeroDocumento(),
+                domain.getCorreo(),
+                domain.getOrganizacionId()
         );
     }
 
     @Override
     public EncargadoDomain toDomain(final EncargadoEntity entity) {
-        var entityAEnsamblar = EncargadoEntity.obtenerValorDefecto(entity);
+        var entitySafe = EncargadoEntity.obtenerValorDefecto(entity);
         return new EncargadoDomain(
-                entityAEnsamblar.getId(),
-                entityAEnsamblar.getNombre(),
-                entityAEnsamblar.getUsername(),
-                entityAEnsamblar.getTelefono(),
-                entityAEnsamblar.getPrefijoTelefono(),
-                entityAEnsamblar.getContrasena(),
-                entityAEnsamblar.getCorreo(),
-                entityAEnsamblar.getTipoDocumento(),
-                entityAEnsamblar.getDocumento(),
-                OrganizacionDeportivaEntityAssembler.getInstance().toDomain(entityAEnsamblar.getOrganizacion())
+                entitySafe.getId(),
+                entitySafe.getNombre(),
+                entitySafe.getUsername(),
+                entitySafe.getContrasena(),
+                entitySafe.getPrefijoTelefono(),
+                entitySafe.getTelefono(),
+                entitySafe.getTipoDocumento(),
+                entitySafe.getNumeroDocumento(),
+                entitySafe.getCorreo(),
+                entitySafe.getOrganizacionId()
         );
     }
 
     @Override
     public List<EncargadoDomain> toDomain(final List<EncargadoEntity> entityList) {
-        var listaResultados = new ArrayList<EncargadoDomain>();
+        var resultado = new ArrayList<EncargadoDomain>();
         for (EncargadoEntity entity : entityList) {
-            listaResultados.add(toDomain(entity));
+            resultado.add(toDomain(entity));
         }
-        return listaResultados;
+        return resultado;
     }
 
     @Override
     public List<EncargadoEntity> toEntity(final List<EncargadoDomain> domainList) {
-        var listaResultados = new ArrayList<EncargadoEntity>();
+        var resultado = new ArrayList<EncargadoEntity>();
         for (EncargadoDomain domain : domainList) {
-            listaResultados.add(toEntity(domain));
+            resultado.add(toEntity(domain));
         }
-        return listaResultados;
+        return resultado;
     }
 }

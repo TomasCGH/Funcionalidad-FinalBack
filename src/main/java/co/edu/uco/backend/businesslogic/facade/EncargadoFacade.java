@@ -6,18 +6,20 @@ import co.edu.uco.backend.dto.EncargadoDTO;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Facade para el módulo Encargado.
+ * Extiende UsuarioFacade y expone operaciones CRUD específicas para Encargado.
+ */
 public interface EncargadoFacade extends UsuarioFacade {
 
-    void registrarNuevoEncargado(UUID orgId, EncargadoDTO domain) throws BackEndException;
+    void registrarNuevoEncargado(EncargadoDTO encargado) throws BackEndException;
 
-    void modificarEncargadoExistente(UUID orgId, UUID encargadoID, EncargadoDTO domain) throws BackEndException;
+    void modificarEncargadoExistente(UUID encargadoId, EncargadoDTO encargado) throws BackEndException;
 
-    void darBajaDefinitivamenteEncargadoExistente(UUID orgId, UUID encargadoId) throws BackEndException;
+    void darBajaDefinitivamenteEncargadoExistente(UUID encargadoId) throws BackEndException;
 
-    EncargadoDTO consultarEncargadoPorId(UUID orgId, UUID encargadoId) throws BackEndException;
+    EncargadoDTO consultarEncargadoPorId(UUID encargadoId) throws BackEndException;
 
-    List<EncargadoDTO> consultarEncargadosPorOrganizacion(UUID orgId, EncargadoDTO filtro) throws BackEndException;
-
-    String activarCuentaEncargado(String tokenDeActivacion, String rawPasswordNueva);
+    List<EncargadoDTO> consultarEncargados(EncargadoDTO filtro) throws BackEndException;
 
 }

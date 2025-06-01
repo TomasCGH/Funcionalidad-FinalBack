@@ -1,7 +1,6 @@
 package co.edu.uco.backend.businesslogic.assembler.encargado.dto;
 
 import co.edu.uco.backend.businesslogic.assembler.DTOAssembler;
-import co.edu.uco.backend.businesslogic.assembler.organizaciondeportiva.dto.OrganizacionDeportivaDTOAssembler;
 import co.edu.uco.backend.businesslogic.businesslogic.domain.EncargadoDomain;
 import co.edu.uco.backend.crosscutting.utilitarios.UtilObjeto;
 import co.edu.uco.backend.dto.EncargadoDTO;
@@ -32,27 +31,27 @@ public final class EncargadoDTOAssembler implements DTOAssembler<EncargadoDTO, E
                 domain.getContrasena(),
                 domain.getPrefijoTelefono(),
                 domain.getTelefono(),
-                domain.getCorreo(),
                 domain.getTipoDocumento(),
-                domain.getDocumento(),
-                OrganizacionDeportivaDTOAssembler.getInstance().toDTO(domain.getOrganizacion())
+                domain.getNumeroDocumento(),
+                domain.getCorreo(),
+                domain.getOrganizacionId()
         );
     }
 
     @Override
     public EncargadoDomain toDomain(final EncargadoDTO dto) {
-        var dtoAEnsamblar = EncargadoDTO.obtenerValorDefecto(dto);
+        var dtoSafe = EncargadoDTO.obtenerValorDefecto(dto);
         return new EncargadoDomain(
-                dtoAEnsamblar.getId(),
-                dtoAEnsamblar.getNombre(),
-                dtoAEnsamblar.getUsername(),
-                dtoAEnsamblar.getContrasena(),
-                dtoAEnsamblar.getPrefijoTelefono(),
-                dtoAEnsamblar.getTelefono(),
-                dtoAEnsamblar.getCorreo(),
-                dtoAEnsamblar.getTipoDocumento(),
-                dtoAEnsamblar.getDocumento(),
-                OrganizacionDeportivaDTOAssembler.getInstance().toDomain(dtoAEnsamblar.getOrganizacion())
+                dtoSafe.getId(),
+                dtoSafe.getNombre(),
+                dtoSafe.getUsername(),
+                dtoSafe.getContrasena(),
+                dtoSafe.getPrefijoTelefono(),
+                dtoSafe.getTelefono(),
+                dtoSafe.getTipoDocumento(),
+                dtoSafe.getNumeroDocumento(),
+                dtoSafe.getCorreo(),
+                dtoSafe.getOrganizacionId()
         );
     }
 
