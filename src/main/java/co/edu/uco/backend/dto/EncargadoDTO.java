@@ -1,7 +1,6 @@
 package co.edu.uco.backend.dto;
 
 import co.edu.uco.backend.crosscutting.utilitarios.UtilObjeto;
-import co.edu.uco.backend.crosscutting.utilitarios.UtilUUID;
 
 import java.util.UUID;
 
@@ -10,20 +9,22 @@ import java.util.UUID;
  * - tipoDocumento  (CD o CE)
  * - numeroDocumento
  * - correo         (autogenerado)
- * - organizacionId (UUID de la organización deportiva)
+ * - organizacion   (etiqueta: IMMER, INDER u OLIMPO)
  */
 public final class EncargadoDTO extends UsuarioDTO {
     private String tipoDocumento;
     private String numeroDocumento;
     private String correo;
-    private UUID organizacionId;
+    private String organizacion;
 
     public EncargadoDTO() {
         super();
+        initValoresDefecto();
     }
 
     public EncargadoDTO(final UUID id) {
         super(id);
+        initValoresDefecto();
     }
 
     public EncargadoDTO(
@@ -36,13 +37,20 @@ public final class EncargadoDTO extends UsuarioDTO {
             final String tipoDocumento,
             final String numeroDocumento,
             final String correo,
-            final UUID organizacionId
+            final String organizacion
     ) {
         super(id, nombre, username, contrasena, prefijoTelefono, telefono);
         setTipoDocumento(tipoDocumento);
         setNumeroDocumento(numeroDocumento);
         setCorreo(correo);
-        setOrganizacionId(organizacionId);
+        setOrganizacion(organizacion);
+    }
+
+    private void initValoresDefecto() {
+        this.tipoDocumento   = "";
+        this.numeroDocumento = "";
+        this.correo          = "";
+        this.organizacion    = "";
     }
 
     public static EncargadoDTO obtenerValorDefecto() {
@@ -73,20 +81,16 @@ public final class EncargadoDTO extends UsuarioDTO {
         return correo;
     }
 
+    // Aunque no se envíe desde el front, se incluye para que la capa de respuesta pueda devolverlo
     public void setCorreo(String correo) {
         this.correo = UtilObjeto.getInstance().validarCadena(correo);
     }
 
-    public UUID getOrganizacionId() {
-        return organizacionId;
+    public String getOrganizacion() {
+        return organizacion;
     }
 
-    public void setOrganizacionId(UUID organizacionId) {
-        // Usamos directamente los métodos estáticos de UtilUUID
-        if (organizacionId == null || UtilUUID.esValorDefecto(organizacionId)) {
-            this.organizacionId = UtilUUID.obtenerValorDefecto();
-        } else {
-            this.organizacionId = organizacionId;
-        }
+    public void setOrganizacion(String organizacion) {
+        this.organizacion = UtilObjeto.getInstance().validarCadena(organizacion).toUpperCase();
     }
 }

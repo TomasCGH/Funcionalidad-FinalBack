@@ -11,6 +11,7 @@ import java.util.UUID;
  * - numeroDocumento
  * - correo         (autogenerado)
  * - organizacionId (UUID de la organización deportiva)
+ * - organizacion   (etiqueta: IMMER, INDER u OLIMPO)
  *
  * En toda parte, garantizamos que ningún atributo quede null:
  *   • Para Strings, usamos "" (cadena vacía) como valor por defecto.
@@ -21,15 +22,16 @@ public final class EncargadoDomain extends UsuarioDomain {
     private String numeroDocumento;
     private String correo;
     private UUID organizacionId;
+    private String organizacion;
 
     /** Constructor por defecto: inicializa cadenas como "" y UUID como valor por defecto. */
     public EncargadoDomain() {
         super();
-        // Nunca pasamos null: utilizamos "" directamente
         setTipoDocumento("");
         setNumeroDocumento("");
         setCorreo("");
         setOrganizacionId(UtilUUID.obtenerValorDefecto());
+        setOrganizacion("");
     }
 
     /** Constructor que recibe sólo el ID (para buscar o eliminar). */
@@ -39,6 +41,7 @@ public final class EncargadoDomain extends UsuarioDomain {
         setNumeroDocumento("");
         setCorreo("");
         setOrganizacionId(UtilUUID.obtenerValorDefecto());
+        setOrganizacion("");
     }
 
     /**
@@ -55,18 +58,15 @@ public final class EncargadoDomain extends UsuarioDomain {
             final String tipoDocumento,
             final String numeroDocumento,
             final String correo,
-            final UUID organizacionId
+            final UUID organizacionId,
+            final String organizacion
     ) {
-        // Llamamos al constructor padre para inicializar los atributos de UsuarioDomain
         super(id, nombre, username, contrasena, prefijoTelefono, telefono);
-
-        // Para los Strings, si el parámetro viene null o vacío, asignamos "".
         setTipoDocumento(tipoDocumento);
         setNumeroDocumento(numeroDocumento);
         setCorreo(correo);
-
-        // Para el UUID, si es null o es valor por defecto, asignamos UtilUUID.obtenerValorDefecto()
         setOrganizacionId(organizacionId);
+        setOrganizacion(organizacion);
     }
 
     /** Devuelve un EncargadoDomain con valores por defecto (sin ningún null interno). */
@@ -76,7 +76,6 @@ public final class EncargadoDomain extends UsuarioDomain {
 
     /** Si la instancia pasada es null, devuelve el valor por defecto; si no, la misma instancia. */
     public static EncargadoDomain obtenerValorDefecto(final EncargadoDomain domain) {
-        // UtilObjeto.obtenerValorDefecto(domain, defaultDomain) solo se usa para objetos complejos
         return UtilObjeto.getInstance().obtenerValorDefecto(domain, obtenerValorDefecto());
     }
 
@@ -87,11 +86,9 @@ public final class EncargadoDomain extends UsuarioDomain {
     }
 
     public void setTipoDocumento(String tipoDocumento) {
-        // Nunca asignamos null: si entra null o blanco, queda como ""
         if (tipoDocumento == null || tipoDocumento.isBlank()) {
             this.tipoDocumento = "";
         } else {
-            // UtilObjeto.validarCadena(...) quita espacios sobrantes, etc.
             this.tipoDocumento = UtilObjeto.getInstance().validarCadena(tipoDocumento);
         }
     }
@@ -125,11 +122,22 @@ public final class EncargadoDomain extends UsuarioDomain {
     }
 
     public void setOrganizacionId(UUID organizacionId) {
-        // Si es null o es el UUID por defecto, asignamos el UUID por defecto
         if (organizacionId == null || UtilUUID.esValorDefecto(organizacionId)) {
             this.organizacionId = UtilUUID.obtenerValorDefecto();
         } else {
             this.organizacionId = organizacionId;
+        }
+    }
+
+    public String getOrganizacion() {
+        return organizacion;
+    }
+
+    public void setOrganizacion(String organizacion) {
+        if (organizacion == null || organizacion.isBlank()) {
+            this.organizacion = "";
+        } else {
+            this.organizacion = UtilObjeto.getInstance().validarCadena(organizacion).toUpperCase();
         }
     }
 }

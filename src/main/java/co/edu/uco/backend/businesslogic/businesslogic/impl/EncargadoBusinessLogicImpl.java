@@ -22,7 +22,15 @@ import java.util.stream.Collectors;
  */
 public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
 
-    private static final String ORG_PREFIX = "IMMER";
+    // UUID fijos para cada organización. Ajustar estos valores según los UUID reales en base de datos:
+    private static final UUID IMMER_ID  = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID INDER_ID  = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID OLIMPO_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+
+    private static final String ORG_IMMER  = "IMMER";
+    private static final String ORG_INDER  = "INDER";
+    private static final String ORG_OLIMPO = "OLIMPO";
+
     private final DAOFactory factory;
 
     public EncargadoBusinessLogicImpl(DAOFactory factory) {
@@ -46,24 +54,27 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
                 encargado.getNumeroDocumento()
         );
 
-        // 5. Validar que organizacionId no sea nulo ni valor por defecto
-        if (encargado.getOrganizacionId() == null || UtilUUID.esValorDefecto(encargado.getOrganizacionId())) {
-            String mensajeUsuario  = "Debe proporcionar un organizacionId válido";
-            String mensajeTecnico  = "organizacionId es nulo o es UUID por defecto al crear encargado";
+        // 5. Validar etiqueta de organización y traducirla a UUID
+        String orgEtiqueta = encargado.getOrganizacion().trim().toUpperCase();
+        UUID orgId = traducirEtiquetaAUUID(orgEtiqueta);
+        if (UtilUUID.esValorDefecto(orgId)) {
+            String mensajeUsuario  = "Etiqueta de organización inválida. Solo se permiten \"IMMER\", \"INDER\" u \"OLIMPO\".";
+            String mensajeTecnico  = "Etiqueta recibida: \"" + encargado.getOrganizacion() + "\"";
             throw BusinessLogicBackEndException.reportar(mensajeUsuario, mensajeTecnico);
         }
 
         // 6. Generar nuevo UUID único para el Encargado
         UUID nuevoId = generarIdentificadorNuevoEncargado();
 
-        // 7. Generar correo automático: IMMER + username.toLowerCase() + "@immer.co"
-        String correoGenerado = ORG_PREFIX
+        // 7. Generar correo automático: IMMER + username.toLowerCase() + "@immer.co", etc.
+        String prefijoUpper = orgEtiqueta;
+        String correoGenerado = prefijoUpper
                 + encargado.getUsername().trim().toLowerCase()
                 + "@"
-                + ORG_PREFIX.toLowerCase()
+                + prefijoUpper.toLowerCase()
                 + ".co";
 
-        // 8. Crear un nuevo dominio con todos los datos definitivos
+        // 8. Crear un nuevo dominio con todos los datos definitivos (incluyendo etiqueta y UUID de organizacion)
         EncargadoDomain toCreate = new EncargadoDomain(
                 nuevoId,
                 encargado.getNombre().trim(),
@@ -74,7 +85,8 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
                 encargado.getTipoDocumento().trim(),
                 encargado.getNumeroDocumento().trim(),
                 correoGenerado,
-                encargado.getOrganizacionId()
+                orgId,
+                orgEtiqueta
         );
 
         // 9. Convertir a entidad y persistir en DAO
@@ -106,11 +118,11 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
                 merged.getNumeroDocumento()
         );
 
-        // 7. Verificar que organizacionId no cambie
-        if (!existente.getOrganizacionId().equals(merged.getOrganizacionId())) {
-            String mensajeUsuario  = "No está permitido cambiar de organización una vez asignado";
-            String mensajeTecnico  = "Intento de modificar organizacionId de " + existente.getOrganizacionId() +
-                    " a " + merged.getOrganizacionId();
+        // 7. Verificar que la etiqueta de organización no cambie
+        if (!existente.getOrganizacion().equals(merged.getOrganizacion())) {
+            String mensajeUsuario  = "No está permitido cambiar de organización una vez asignado.";
+            String mensajeTecnico  = "Intento de modificar organizacion de \"" +
+                    existente.getOrganizacion() + "\" a \"" + merged.getOrganizacion() + "\"";
             throw BusinessLogicBackEndException.reportar(mensajeUsuario, mensajeTecnico);
         }
 
@@ -176,7 +188,7 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
 
     @Override
     public UsuarioDomain consultarUsuarioPorId(UUID usuarioId) {
-        // Podría reenviar a consultarEncargadoPorId o no aplicar
+        // No aplica para Encargado en este contexto
         return null;
     }
 
@@ -227,76 +239,103 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
     }
 
     private void validarIntegridadUsername(String username) throws BackEndException {
+        // 1. Obligatoriedad
         if (UtilTexto.getInstance().estaVacia(username)) {
             throw BusinessLogicBackEndException.reportar(
                     "Error de obligatoriedad: el username es obligatorio.",
                     "username nulo o vacío en EncargadoDomain"
             );
         }
+
+        // 2. Quitamos espacios al inicio/fin para medir longitud
         String val = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(username);
+
+        // 3. Longitud: entre 5 y 30 caracteres
         if (val.length() < 5 || val.length() > 30) {
             throw BusinessLogicBackEndException.reportar(
                     "Longitud inválida para el username. Debe tener entre 5 y 30 caracteres.",
                     "username '" + val + "' con longitud " + val.length()
             );
         }
-        // Permitir solo letras, números y espacios intermedios:
-        if (!val.matches("^[A-Za-z0-9 ]+$")) {
+
+        // 4. Formato: sólo letras y números, sin espacios en el medio
+        //    El regex ^[A-Za-z0-9]+$ obliga a que val consista únicamente de letras (A–Z, a–z) O números (0–9), sin espacios.
+        if (!val.matches("^[A-Za-z0-9]+$")) {
             throw BusinessLogicBackEndException.reportar(
-                    "Formato inválido para el username. Solo se permiten letras, números y espacios.",
-                    "username '" + val + "' contiene caracteres no permitidos"
+                    "Formato inválido para el username. Solo se permiten letras y números, sin espacios.",
+                    "username '" + val + "' contiene espacios o caracteres no permitidos"
             );
         }
     }
 
+
     private void validarIntegridadContrasena(String contrasena) throws BackEndException {
-        if (UtilTexto.getInstance().estaVacia(contrasena)) {
+        // 1. Sólo consideramos "obligatoria" si llega null o "" (longitud 0).
+        //    NO usamos trim() ni UtilTexto.estaVacia() aquí, para que "   " (sólo espacios)
+        //    NO se considere vacío en esta primera fase.
+        if (contrasena == null || contrasena.isEmpty()) {
             throw BusinessLogicBackEndException.reportar(
                     "Error de obligatoriedad: la contraseña es obligatoria.",
-                    "contrasena nula o vacía en EncargadoDomain"
+                    "contrasena es null o vacía en EncargadoDomain"
             );
         }
-        String val = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(contrasena);
-        if (val.length() < 8 || val.length() > 24) {
+
+        // 2. Ahora validamos la longitud TOTAL (incluyendo espacios).
+        //    Como queremos que los espacios cuenten como caracteres, NO hacemos trim().
+        int length = contrasena.length();
+        if (length < 8 || length > 24) {
             throw BusinessLogicBackEndException.reportar(
-                    "Longitud inválida para la contraseña. Debe tener entre 8 y 24 caracteres.",
-                    "contrasena con longitud " + val.length()
+                    "Longitud inválida para la contraseña. Debe tener entre 8 y 24 caracteres (los espacios cuentan).",
+                    "contrasena con longitud " + length
             );
         }
-        int digitCount = 0, letterCount = 0;
+
+        // 3. Contamos cuántos dígitos y cuántas letras hay dentro.
+        //    Los espacios (u otros símbolos) ocupan “sitio” en el total de caracteres,
+        //    pero no suman ni como dígitos ni como letras.
+        int digitCount = 0;
+        int letterCount = 0;
         for (char c : contrasena.toCharArray()) {
-            if (Character.isDigit(c)) digitCount++;
-            else if (Character.isLetter(c)) letterCount++;
+            if (Character.isDigit(c)) {
+                digitCount++;
+            } else if (Character.isLetter(c)) {
+                letterCount++;
+            }
+            // Si es espacio u otro carácter, no incrementamos nada.
         }
         if (digitCount < 4 || letterCount < 3) {
             throw BusinessLogicBackEndException.reportar(
-                    "La contraseña debe contener al menos 4 dígitos y 3 letras.",
-                    "contrasena no cumple mínimos de dígitos/letras"
+                    "La contraseña debe contener al menos 4 dígitos y 3 letras (los espacios y símbolos no cuentan como dígitos o letras).",
+                    "contrasena no cumple mínimos de dígitos (" + digitCount + ") o letras (" + letterCount + ")"
             );
         }
+
+        // 4. Ya no hace falta más chequear. Si llega hasta aquí, la contraseña es “válida”.
     }
 
+
+
     private void validarIntegridadPrefijo(String prefijo) throws BackEndException {
+        // 1. Obligatoriedad
         if (UtilTexto.getInstance().estaVacia(prefijo)) {
             throw BusinessLogicBackEndException.reportar(
                     "Error de obligatoriedad: el prefijo telefónico es obligatorio.",
                     "prefijo nulo o vacío en EncargadoDomain"
             );
         }
+
+        // 2. Quitamos espacios en blanco al inicio/fin
         String val = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(prefijo);
-        if (val.length() < 2 || val.length() > 5) {
+
+        // 3. Verificar que sea exactamente "+57"
+        if (!val.equals("+57")) {
             throw BusinessLogicBackEndException.reportar(
-                    "Longitud inválida para el prefijo. Debe tener entre 2 y 5 caracteres.",
-                    "prefijo '" + val + "' con longitud " + val.length()
-            );
-        }
-        if (!UtilTexto.getInstance().contieneSoloNumerosYMas(val)) {
-            throw BusinessLogicBackEndException.reportar(
-                    "Formato inválido para el prefijo. Solo se permiten dígitos y el símbolo '+'.",
-                    "prefijo '" + val + "' contiene caracteres inválidos"
+                    "Prefijo inválido: sólo se permite \"+57\" como código de país.",
+                    "prefijo '" + val + "' no coincide con +57"
             );
         }
     }
+
 
     private void validarIntegridadTelefono(String telefono) throws BackEndException {
         if (UtilTexto.getInstance().estaVacia(telefono)) {
@@ -461,6 +500,19 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
         return EncargadoEntityAssembler.getInstance().toDomain(entity);
     }
 
+    private UUID traducirEtiquetaAUUID(String etiqueta) {
+        switch (etiqueta) {
+            case ORG_IMMER:
+                return IMMER_ID;
+            case ORG_INDER:
+                return INDER_ID;
+            case ORG_OLIMPO:
+                return OLIMPO_ID;
+            default:
+                return UtilUUID.obtenerValorDefecto();
+        }
+    }
+
     private EncargadoDomain mezclarCamposEncargado(EncargadoDomain original, EncargadoDomain actualizaciones) {
         String nombre   = UtilTexto.getInstance().estaVacia(actualizaciones.getNombre())
                 ? original.getNombre()
@@ -483,9 +535,11 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
         String numero   = UtilTexto.getInstance().estaVacia(actualizaciones.getNumeroDocumento())
                 ? original.getNumeroDocumento()
                 : actualizaciones.getNumeroDocumento().trim();
-        UUID orgId      = UtilUUID.esValorDefecto(actualizaciones.getOrganizacionId())
-                ? original.getOrganizacionId()
-                : actualizaciones.getOrganizacionId();
+        String etiqueta = UtilTexto.getInstance().estaVacia(actualizaciones.getOrganizacion())
+                ? original.getOrganizacion()
+                : actualizaciones.getOrganizacion().trim().toUpperCase();
+        // Traducción de la etiqueta a UUID de organización:
+        UUID orgId = traducirEtiquetaAUUID(etiqueta);
 
         // El correo original nunca cambia
         String correoOriginal = original.getCorreo();
@@ -500,7 +554,8 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
                 tipo,
                 numero,
                 correoOriginal,
-                orgId
+                original.getOrganizacionId(),
+                etiqueta
         );
     }
 }

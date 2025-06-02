@@ -12,12 +12,11 @@ public abstract class UsuarioDomain {
     private String prefijoTelefono;
     private String telefono;
 
-
-     protected UsuarioDomain() {
+    protected UsuarioDomain() {
         setId(UtilUUID.obtenerValorDefecto());
         setNombre(UtilTexto.getInstance().obtenerValorDefecto());
         setUsername(UtilTexto.getInstance().obtenerValorDefecto());
-        setContrasena(UtilTexto.getInstance().obtenerValorDefecto());
+        setContrasena("");  // Inicializar siempre como "" (no null)
         setPrefijoTelefono(UtilTexto.getInstance().obtenerValorDefecto());
         setTelefono(UtilTexto.getInstance().obtenerValorDefecto());
     }
@@ -26,13 +25,19 @@ public abstract class UsuarioDomain {
         setId(id);
         setNombre(UtilTexto.getInstance().obtenerValorDefecto());
         setUsername(UtilTexto.getInstance().obtenerValorDefecto());
-        setContrasena(UtilTexto.getInstance().obtenerValorDefecto());
+        setContrasena("");
         setPrefijoTelefono(UtilTexto.getInstance().obtenerValorDefecto());
         setTelefono(UtilTexto.getInstance().obtenerValorDefecto());
     }
 
-    protected UsuarioDomain(final UUID id, final String nombre, final String username, final String contrasena,
-                         final String prefijoTelefono, final String telefono) {
+    protected UsuarioDomain(
+            final UUID id,
+            final String nombre,
+            final String username,
+            final String contrasena,
+            final String prefijoTelefono,
+            final String telefono
+    ) {
         setId(id);
         setNombre(nombre);
         setUsername(username);
@@ -41,7 +46,6 @@ public abstract class UsuarioDomain {
         setTelefono(telefono);
     }
 
-    // Métodos estáticos package-private
     static UsuarioDomain obtenerUsuarioDefecto() {
         return new UsuarioDomain() {};
     }
@@ -50,7 +54,6 @@ public abstract class UsuarioDomain {
         return UtilObjeto.getInstance().obtenerValorDefecto(domain, obtenerUsuarioDefecto());
     }
 
-    // Getters públicos
     public UUID getId() {
         return id;
     }
@@ -75,8 +78,6 @@ public abstract class UsuarioDomain {
         return telefono;
     }
 
-
-    // Setters protegidos para uso desde subclases
     public void setId(final UUID id) {
         this.id = UtilUUID.obtenerValorDefecto(id);
     }
@@ -90,7 +91,8 @@ public abstract class UsuarioDomain {
     }
 
     protected void setContrasena(final String contrasena) {
-        this.contrasena = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(contrasena);
+        // No recortamos ni quitamos espacios: si vienen, los conservamos
+        this.contrasena = (contrasena == null ? "" : contrasena);
     }
 
     protected void setPrefijoTelefono(final String prefijoTelefono) {

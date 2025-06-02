@@ -3,10 +3,12 @@ package co.edu.uco.backend.businesslogic.assembler.encargado.entity;
 import co.edu.uco.backend.businesslogic.assembler.EntityAssembler;
 import co.edu.uco.backend.businesslogic.businesslogic.domain.EncargadoDomain;
 import co.edu.uco.backend.crosscutting.utilitarios.UtilObjeto;
+import co.edu.uco.backend.crosscutting.utilitarios.UtilUUID;
 import co.edu.uco.backend.entity.EncargadoEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public final class EncargadoEntityAssembler implements EntityAssembler<EncargadoEntity, EncargadoDomain> {
 
@@ -41,6 +43,21 @@ public final class EncargadoEntityAssembler implements EntityAssembler<Encargado
     @Override
     public EncargadoDomain toDomain(final EncargadoEntity entity) {
         var entitySafe = EncargadoEntity.obtenerValorDefecto(entity);
+
+        UUID orgId = entitySafe.getOrganizacionId();
+        String etiqueta;
+        if (UtilUUID.generarNuevoUUID().toString().equals(UtilUUID.obtenerValorDefecto().toString())) {
+            etiqueta = "";
+        } else if (orgId.equals(UUID.fromString("11111111-1111-1111-1111-111111111111"))) {
+            etiqueta = "IMMER";
+        } else if (orgId.equals(UUID.fromString("22222222-2222-2222-2222-222222222222"))) {
+            etiqueta = "INDER";
+        } else if (orgId.equals(UUID.fromString("33333333-3333-3333-3333-333333333333"))) {
+            etiqueta = "OLIMPO";
+        } else {
+            etiqueta = "";
+        }
+
         return new EncargadoDomain(
                 entitySafe.getId(),
                 entitySafe.getNombre(),
@@ -51,7 +68,8 @@ public final class EncargadoEntityAssembler implements EntityAssembler<Encargado
                 entitySafe.getTipoDocumento(),
                 entitySafe.getNumeroDocumento(),
                 entitySafe.getCorreo(),
-                entitySafe.getOrganizacionId()
+                orgId,
+                etiqueta
         );
     }
 
