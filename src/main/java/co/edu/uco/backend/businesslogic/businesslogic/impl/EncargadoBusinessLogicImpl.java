@@ -210,10 +210,11 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
         validarIntegridadNombre(e.getNombre());
         validarIntegridadUsername(e.getUsername());
         validarIntegridadContrasena(e.getContrasena());
-        validarIntegridadPrefijo(e.getPrefijoTelefono());
-        validarIntegridadTelefono(e.getTelefono());
         validarIntegridadTipoDocumento(e.getTipoDocumento());
         validarIntegridadNumeroDocumento(e.getTipoDocumento(), e.getNumeroDocumento());
+        validarIntegridadPrefijo(e.getPrefijoTelefono());
+        validarIntegridadTelefono(e.getTelefono());
+
     }
 
     private void validarIntegridadNombre(String nombre) throws BackEndException {
@@ -224,9 +225,9 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
             );
         }
         String val = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(nombre);
-        if (val.length() < 2 || val.length() > 100) {
+        if (val.length() < 2 || val.length() > 50) {
             throw BusinessLogicBackEndException.reportar(
-                    "Longitud inválida para el nombre. Debe tener entre 2 y 100 caracteres.",
+                    "Longitud inválida para el nombre. Debe tener entre 2 y 50 caracteres.",
                     "nombre '" + val + "' con longitud " + val.length()
             );
         }
@@ -258,15 +259,21 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
             );
         }
 
-        // 4. Formato: sólo letras y números, sin espacios en el medio
-        //    El regex ^[A-Za-z0-9]+$ obliga a que val consista únicamente de letras (A–Z, a–z) O números (0–9), sin espacios.
-        if (!val.matches("^[A-Za-z0-9]+$")) {
+        // 4. Formato:
+        //    - No puede contener '@' ni espacios en ninguna posición
+        //    - Sólo letras, números, punto (.) o guión bajo (_) en medio
+        //    - No puede empezar o terminar con '.' ni '_'
+        //    - No se permiten dos puntos consecutivos ni dos guiones bajos consecutivos
+        String patron = "^[A-Za-z0-9](?:[A-Za-z0-9]|[._](?=[A-Za-z0-9]))*[A-Za-z0-9]$";
+        if (!val.matches(patron)) {
             throw BusinessLogicBackEndException.reportar(
-                    "Formato inválido para el username. Solo se permiten letras y números, sin espacios.",
-                    "username '" + val + "' contiene espacios o caracteres no permitidos"
+                    "Formato inválido para el username. Debe iniciar y terminar con letra o número, "
+                            + "puede contener ‘.’ o ‘_’ en medio, pero sin espacios, sin ‘@’ y sin puntos/guiones bajos consecutivos.",
+                    "username '" + val + "' no cumple el patrón"
             );
         }
     }
+
 
 
     private void validarIntegridadContrasena(String contrasena) throws BackEndException {
@@ -347,7 +354,7 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
         String val = UtilTexto.getInstance().quitarEspaciosEnBlancoInicioFin(telefono);
         if (val.length() != 10 || !val.startsWith("3")) {
             throw BusinessLogicBackEndException.reportar(
-                    "Formato inválido para el teléfono. Debe tener 10 dígitos y comenzar con '3'.",
+                    "Formato inválido para el teléfono. Debe tener 10 dígitos y comenzar con '3'.(sin espacios)",
                     "telefono '" + val + "' no cumple formato colombiano"
             );
         }
@@ -366,10 +373,10 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
                     "tipoDocumento nulo o vacío en EncargadoDomain"
             );
         }
-        if (!("CD".equals(tipo) || "CE".equals(tipo))) {
+        if (!("CC".equals(tipo) || "CE".equals(tipo))) {
             throw BusinessLogicBackEndException.reportar(
-                    "Tipo de documento inválido. Solo se permiten 'CD' o 'CE'.",
-                    "tipoDocumento '" + tipo + "' no es ni 'CD' ni 'CE'"
+                    "Tipo de documento inválido. Solo se permiten 'CC' o 'CE'.",
+                    "tipoDocumento '" + tipo + "' no es ni 'CC' ni 'CE'"
             );
         }
     }
@@ -388,7 +395,7 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
             );
         }
         int len = numero.length();
-        if ("CD".equals(tipo)) {
+        if ("CC".equals(tipo)) {
             if (len < 6 || len > 10) {
                 throw BusinessLogicBackEndException.reportar(
                         "La cédula de ciudadanía debe tener entre 6 y 10 dígitos.",
