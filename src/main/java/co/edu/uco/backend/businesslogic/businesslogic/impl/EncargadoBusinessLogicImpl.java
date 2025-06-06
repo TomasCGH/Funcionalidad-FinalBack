@@ -337,7 +337,7 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
         // 3. Verificar que sea exactamente "+57"
         if (!val.equals("+57")) {
             throw BusinessLogicBackEndException.reportar(
-                    "Prefijo inválido: sólo se permite \"+57\" como código de país.",
+                    "Prefijo inválido: sólo se permite \"+57\" como código de país.(sin espacios)",
                     "prefijo '" + val + "' no coincide con +57"
             );
         }
@@ -425,7 +425,7 @@ public class EncargadoBusinessLogicImpl implements EncargadoBusinessLogic {
 
     private void validarNoExistaEncargadoConMismoUsername(String username) throws BackEndException {
         EncargadoEntity filtro = new EncargadoEntity();
-        filtro.setUsername(username.trim());
+        filtro.setUsername(username.trim().toLowerCase());
         if (!factory.getEncargadoDAO().consultar(filtro).isEmpty()) {
             throw BusinessLogicBackEndException.reportar(
                     "Ya existe un Encargado con ese username. Por favor ingrese un username diferente.",

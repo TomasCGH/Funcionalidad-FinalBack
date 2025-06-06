@@ -6,6 +6,7 @@ import co.edu.uco.backend.crosscutting.exceptions.BackEndException;
 import co.edu.uco.backend.dto.EncargadoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,17 @@ public class EncargadoController {
 
     public EncargadoController() throws BackEndException {
         this.encargadoFacade = new EncargadoFacadeImpl();
+    }
+
+    /**
+     * Captura el caso en que no venga un body válido en la petición (JSON ausente o mal formado).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleMissingBody(HttpMessageNotReadableException ex) {
+        String mensajeUsuario = "Se debe enviar un cuerpo (body) en formato JSON.";
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(mensajeUsuario);
     }
 
     /**
